@@ -25,8 +25,8 @@
 		 * @author jittagornp
 		 * create 16/11/2015
 		 * 
-		 * require jQuery
-		 * require numeral
+		 * require jQuery - https://code.jquery.com/jquery-1.11.3.min.js
+		 * require numeral - https://cdnjs.cloudflare.com/ajax/libs/numeral.js/1.4.5/numeral.min.js
 		 */
 
 		(function ($, numeral, SELECTOR) {
@@ -118,6 +118,21 @@
 				function isNegativeOrDot(event){
 					return event.keyCode == 189 || event.keyCode == 190;
 				}
+				
+				function invalidNegative(event, val){
+					return event.keyCode == 189 && /.+\-/g.test(val);
+				}
+				
+				function doubleNumberCH(val){
+					return /(\-\-)+/g.test(val) 
+							|| /(\.\.)+/g.test(val)
+							|| /(\-\.)+/g.test(val)
+							|| /(\.\-)+/g.test(val);
+				}
+
+				function cutLast($input, val){
+					val && $input.val(val.substr(0, val.length - 1));
+				}
 
 				function callback(event, onSpc, onFormat) {
 
@@ -127,12 +142,15 @@
 					}
 					
 					var $input = $(this);
+					var val = $input.val();
+					
 					if(isNegativeOrDot(event)){
-						var val = $input.val();
-						if(/(\-\-)+/g.test(val) || /(\.\.)+/g.test(val)){
-							$input.val(val.substr(0, val.length - 1));
+							
+						if(invalidNegative(event, val) || doubleNumberCH(val)){
+							cutLast($input, val);
 							event.preventDefault();
-				}
+						}
+
 						return;
 					}
 
@@ -141,9 +159,9 @@
 						return;
 					}
 
-					var val = toNumber($input.val());
+					val = toNumber($input.val());
 					if (isNotNumberFormat(val)) {
-						val && $input.val(val.substr(0, val.length - 1));
+						cutLast($input, val);
 						event.preventDefault();
 						return;
 					}
