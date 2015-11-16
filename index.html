@@ -1,0 +1,182 @@
+<body>
+
+	<form>
+		Please put number : <input type="text" class="number-format" maxlength="10"/>
+		<button type="submit">submit</button>
+	</form>
+	
+	<style>
+		body {
+			padding : 20px;
+			font-size : 16pt;
+		}
+	
+		input,
+		button {
+			padding : 5px;
+			font-size : 16pt;
+		}
+	</style>
+
+	<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/numeral.js/1.4.5/numeral.min.js"></script>
+	<script>
+		/**
+		 * @author jittagornp
+		 * create 16/11/2015
+		 * 
+		 * require jQuery
+		 * require numeral
+		 */
+
+		(function ($, numeral, SELECTOR) {
+			$(function () {
+
+				var $doc = $(document);
+				var $selector = $(SELECTOR);
+				var FORMAT = '#,###,##0';
+
+				function isNumberFormat(str) {
+
+					if (/\./g.test(str)) {
+						return /^-?\d+\.\d+$/g.test(str);
+					}
+
+					return /^\-?\d+$/g.test(str);
+				}
+
+				function isNotNumberFormat(str) {
+					return str.length
+							&& !/\.$/.test(str)
+							&& !/\-$/.test(str)
+							&& !isNumberFormat(str);
+				}
+
+				function isNumberKeyCode(code) {
+					return code >= 48 && code <= 57;
+				}
+
+				function isNumpadKeyCode(code) {
+					return code >= 96 && code <= 105;
+				}
+
+				function specialKeyCode(event) {
+							// Allow: backspace, delete, tab, escape and enter
+					return $.inArray(event.keyCode, [46, 8, 9, 27, 13, 110]) !== -1 ||
+							// Allow: Ctrl+A
+							(event.keyCode == 65 && event.ctrlKey === true) ||
+							// Allow: Ctrl+C
+							(event.keyCode == 67 && event.ctrlKey === true) ||
+							// Allow: Ctrl+X
+							(event.keyCode == 88 && event.ctrlKey === true) ||
+							// Allow: home, end, left, right
+							(event.keyCode >= 35 && event.keyCode <= 39);
+				}
+
+				// Ensure that it is a number and stop the keypress           
+				function isNotNumberKeyCode(event) {
+					return (event.shiftKey || !isNumberKeyCode(event.keyCode))
+							&& !isNumpadKeyCode(event.keyCode);
+				}
+
+				function floatingFormat(str) {
+					return str.split(/\.(.*?)$/)[1]
+							.replace(/./g, function (e) {
+								return '#';
+							});
+				}
+
+				function format(str) {
+
+					if (/\./g.test(str)) {
+						return numeral(str).format(FORMAT + '.' + floatingFormat(str));
+					}
+
+					return numeral(str).format(FORMAT);
+				}
+
+				function toNumber(str) {
+					return str.replace(/\,/g, '');
+				}
+
+				function doFormat() {
+					var $input = $(this);
+					var val = toNumber($input.val());
+					if (isNumberFormat(val)) {
+						$input.val(format(val));
+					}
+				}
+				
+				function fromFormat() {
+					var $input = $(this);
+					var val = toNumber($input.val());
+					if (isNumberFormat(val)) {
+						$input.val(val);
+					}
+				}
+				
+				function isNegativeOrDot(event){
+					return event.keyCode == 189 || event.keyCode == 190;
+				}
+
+				function callback(event, onSpc, onFormat) {
+
+					if (specialKeyCode(event)) {
+						onSpc && onSpc.call(this);
+						return;
+					}
+					
+					var $input = $(this);
+					if(isNegativeOrDot(event)){
+						var val = $input.val();
+						if(/(\-\-)+/g.test(val) || /(\.\.)+/g.test(val)){
+							$input.val(val.substr(0, val.length - 1));
+							event.preventDefault();
+				}
+						return;
+					}
+
+					if (isNotNumberKeyCode(event)) {
+						event.preventDefault();
+						return;
+					}
+
+					var val = toNumber($input.val());
+					if (isNotNumberFormat(val)) {
+						val && $input.val(val.substr(0, val.length - 1));
+						event.preventDefault();
+						return;
+					}
+
+					onFormat && onFormat.call(this, val);
+				}
+
+				$doc.on(
+						'keydown',
+						SELECTOR,
+						callback
+					).on(
+						'keyup',
+						SELECTOR,
+						function (event) {
+
+							callback.call(this, event, doFormat, function (val) {
+								$(this).val(format(val));
+							});
+
+						}
+					).on(
+							'submit',
+							'form',
+							function () {
+
+								$(this).find(SELECTOR).each(fromFormat);
+
+							}
+					);
+
+				$selector.each(doFormat);
+			});
+		})(jQuery, numeral, 'input.number-format');
+	</script>
+</body>
